@@ -1,0 +1,5 @@
+Django>=5.2,<5.3
+djangorestframework>=3.15,<4
+psycopg[binary]>=3.2,<4
+django-cors-headers>=4.4,<5
+gunicorn>=23; sys_platform != "win32"
