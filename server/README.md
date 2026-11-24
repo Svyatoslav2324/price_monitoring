@@ -1,5 +1,8 @@
 Описание архитектуры находится в price_monitoring/docs/ARCH.md
 
+### Сборка
+COMPOSE_BAKE=false COMPOSE_PARALLEL_LIMIT=1 docker compose build && docker compose up -d --no-build --scale ozon-worker=1
+
 ### Планировщик и воркеры
 
 Из каталога server выполните `python create_db.py`, чтобы добавить таблицу
