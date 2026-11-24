@@ -1,3 +1,4 @@
+from sqlalchemy import text
 import sys
 import os
 
@@ -6,17 +7,20 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app.database import engine, Base, SessionLocal
 from app import models
+from app.marketplaces import DOMAINS
 
 def init_db():
     print("1. Создаю таблицы...")
     Base.metadata.create_all(bind=engine)
+    with engine.begin() as db:
+        db.execute(text("ALTER TABLE links ADD COLUMN IF NOT EXISTS price_status VARCHAR(32)"))
     print("   Таблицы успешно созданы!")
 
     print("2. Добавляю базовые маркетплейсы...")
     db = SessionLocal()
     try:
         # Список маркетплейсов, которые должны быть в системе
-        default_marketplaces = ["Ozon", "Wildberries", "AliExpress", "Yandex Market"]
+        default_marketplaces = DOMAINS
         
         for name in default_marketplaces:
             # Проверяем, есть ли уже такой маркетплейс в базе
@@ -33,6 +37,7 @@ def init_db():
     except Exception as e:
         print(f"   Ошибка при добавлении: {e}")
         db.rollback()
+        raise
     finally:
         db.close()
 

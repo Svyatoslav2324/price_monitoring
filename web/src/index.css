@@ -352,3 +352,12 @@ a.lk {
 .recharts-text {
     fill: var(--mu)
 }
+.market-section { margin: 22px 0; border: 1px solid var(--bd); border-radius: 14px; background: var(--card); overflow: hidden; }
+.market-heading, .folder-form { padding: 16px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.market-heading { justify-content: space-between; background: var(--chip); }
+.market-heading h2 { margin: 0; font-size: 21px; }
+.market-section small { color: var(--mu); font-size: 14px; margin-left: 8px; }
+.folder-box { padding: 0 16px; border-top: 1px solid var(--bd); }
+.folder-box summary { padding: 14px 0; cursor: pointer; font-weight: 600; }
+.folder-box td:first-child { min-width: 160px; max-width: 320px; overflow-wrap: anywhere; }
+.folder-form input { flex: 1; min-width: 150px; }

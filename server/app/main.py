@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import auth, groups, subscriptions, links
+from .routers import auth, groups, subscriptions, links, imports, folders
 
 app = FastAPI(title="Price Monitoring API")
 
@@ -17,6 +17,8 @@ app.include_router(auth.router)
 app.include_router(groups.router)
 app.include_router(subscriptions.router)
 app.include_router(links.router)
+app.include_router(imports.router)
+app.include_router(folders.router)
 
 @app.get("/")
 def read_root():

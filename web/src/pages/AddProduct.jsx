@@ -1,22 +1,42 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { addOrder, MARKETPLACES, SCHEDULES } from '../api'
+import { addOrder, importOrders, templateUrl, getMarketplaces, SCHEDULES } from '../api'
 
 export default function AddProduct() {
   const [url, setUrl] = useState('')
   const [schedule, setSchedule] = useState('60')
-  const [target, setTarget] = useState('')
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [file, setFile] = useState(null)
+  const [report, setReport] = useState('')
+  const [markets, setMarkets] = useState([])
+  useEffect(() => { getMarketplaces().then(setMarkets).catch(err => setError(err.message)) }, [])
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setBusy(true)
     setError('')
     try {
-      await addOrder({ url: url.trim(), schedule, target: Number(target) })
+      await addOrder({ url: url.trim(), schedule })
       navigate('/orders')
     } catch (err) {
       setError(err.message)
+      setBusy(false)
+    }
+  }
+
+  async function upload(e) {
+    e.preventDefault()
+    setBusy(true)
+    setReport('')
+    try {
+      await importOrders(file)
+      navigate('/orders')
+    } catch (err) {
+      setReport(err.message)
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -28,8 +48,8 @@ export default function AddProduct() {
         <form onSubmit={handleSubmit}>
           <div className="f">
             <label htmlFor="url">Ссылка на товар</label>
-            <input id="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.ozon.ru/product/…" />
-            <div className="hint">Поддерживаются: {MARKETPLACES.map((m) => m[1]).join(', ')}</div>
+            <input required maxLength={255} type="url" id="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.ozon.ru/product/…" />
+            {markets.length > 0 && <div className="hint">Принимаем ссылки: {markets.map(m => m.name).join(', ')}</div>}
           </div>
           <div className="f">
             <label htmlFor="schedule">Как часто проверять цену</label>
@@ -37,15 +57,24 @@ export default function AddProduct() {
               {Object.entries(SCHEDULES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
-          <div className="f">
-            <label htmlFor="target">Желаемая цена, ₽</label>
-            <input id="target" type="number" min="1" inputMode="numeric" value={target} onChange={(e) => setTarget(e.target.value)} />
-            <div className="hint">Уведомим, когда цена опустится до этой отметки или ниже</div>
-          </div>
           <p className="err" role="alert">{error}</p>
-          <button className="btn pri">Начать отслеживание</button>
+          <button disabled={busy} className="btn pri">Начать отслеживание</button>
         </form>
       </div>
+      <section className="card" style={{ maxWidth: 560 }}>
+        <h2>Загрузить ссылки из Excel</h2>
+        <p><a className="lk" href={templateUrl} download>Скачать шаблон Excel</a></p>
+        <p>Вставьте по одной ссылке на карточку товара в каждую строку. Интервал — 60, 360 или 1440 минут. Пустая ячейка означает 60 минут.</p>
+        <form onSubmit={upload}>
+          <label htmlFor="orders-file">Файл .xlsx, до 500 ссылок и 512 КБ</label>
+          <input required id="orders-file" type="file" accept=".xlsx" onChange={e => {
+            setFile(e.target.files[0])
+            setReport('')
+          }} />
+          <button className="btn pri" disabled={busy || !file}>Добавить из файла</button>
+          <p role="status">{report}</p>
+        </form>
+      </section>
     </main>
   )
 }

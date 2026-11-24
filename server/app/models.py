@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, DateTime, BigInteger, Boolean, Table
+from sqlalchemy import UniqueConstraint, Column, Integer, String, Numeric, ForeignKey, DateTime, BigInteger, Boolean, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -70,6 +70,7 @@ class Link(Base):
     url = Column(String(255), unique=True, index=True)
     marketplace_id = Column(Integer, ForeignKey("marketplaces.id", ondelete="CASCADE"))
     
+    price_status = Column(String(32), nullable=True)
     current_price = Column(Numeric(15, 2), nullable=True)
     
     # --- ПОЛЯ ДЛЯ ПЛАНИРОВЩИКА (ВОРКЕРА) ---
@@ -114,3 +115,26 @@ class Subscription(Base):
     
     client = relationship("Client", back_populates="subscriptions")
     group = relationship("Group", back_populates="subscriptions")
+
+class ParseJob(Base):
+    __tablename__ = "parse_jobs"
+
+    link_id = Column(BigInteger, ForeignKey("links.id", ondelete="CASCADE"), primary_key=True)
+    available_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
+    token = Column(String(36))
+
+
+class Folder(Base):
+    __tablename__ = "folders"
+    __table_args__ = (UniqueConstraint("owner_id", "marketplace_id", "name"),)
+    id = Column(Integer, primary_key=True)
+    owner_id = Column(Integer, ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
+    marketplace_id = Column(Integer, ForeignKey("marketplaces.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(80), nullable=False)
+
+
+class FolderItem(Base):
+    __tablename__ = "folder_items"
+    owner_id = Column(Integer, ForeignKey("clients.id", ondelete="CASCADE"), primary_key=True)
+    link_id = Column(BigInteger, ForeignKey("links.id", ondelete="CASCADE"), primary_key=True)
+    folder_id = Column(Integer, ForeignKey("folders.id", ondelete="CASCADE"), nullable=False)

@@ -12,7 +12,13 @@ __pycache__/
 *.log
 .env
 .vscode/
+.idea/
 
 # Файлы ОС (Windows/Mac)
 Thumbs.db
 .DS_Store
+/server/ozon-profiles/
+
+# Локальные браузерные профили для отладки
+/server/app/.local/
+/server/app/data/test_profile/

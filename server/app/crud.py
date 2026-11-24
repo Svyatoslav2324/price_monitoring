@@ -22,14 +22,16 @@ def create_user(db: Session, user_data: dict) -> models.Client:
     db.refresh(db_client)
     return db_client
 
-def update_product_price(db: Session, product: models.Product, new_price: float) -> models.Product:
+def update_product_price(db: Session, product: models.Link, new_price: float) -> models.Link:
     """
     Обновляет текущую цену и пишет изменение в таблицу price_history.
     """
+    product.price_status = "available"
     product.current_price = new_price
+    product.last_parsed_at = func.now()
     
     history_record = models.PriceHistory(
-        product_id=product.id,
+        link_id=product.id,
         price=new_price
     )
     
@@ -108,34 +110,23 @@ def recalculate_links_interval(db: Session, group_id: int):
     Пересчитывает минимальный интервал парсинга для всех ссылок в группе.
     Вызывается при создании/изменении подписки.
     """
-    # 1. Находим минимальный интервал опроса по подписке среди всех АКТИВНЫХ подписок на эту группу
-    # Если подписок нет, вернется None
-    min_interval = db.query(func.min(models.Subscription.interval))\
-        .filter(
-            models.Subscription.group_id == group_id,
-            models.Subscription.status == 'active'
+    group = db.get(models.Group, group_id)
+    if group is None:
+        return
+    for link in group.links:
+        interval = db.query(func.min(models.Subscription.interval)).join(
+            models.group_links, models.group_links.c.group_id == models.Subscription.group_id
+        ).filter(
+            models.group_links.c.link_id == link.id,
+            models.Subscription.status == "active",
         ).scalar()
-
-    # 2. Если подписок нет, ставим ссылкам дефолтный интервал (например, раз в сутки)
-    if min_interval is None:
-        min_interval = 1440 # 24 часа в минутах
-    # Вообще лучше добавить отдельный статус, что группа не опрашивается,
-    # тоесть что каждая ссылка группы не парсится
-
-    # 3. Достаем группу и её ссылки
-    group = db.query(models.Group).filter(models.Group.id == group_id).first()
-    
-    if group:
-        # 4. Обновляем каждую ссылку
-        for link in group.links:
-            # Если интервал изменился, обновляем и время следующего парсинга
-            if link.parse_interval != min_interval:
-                link.parse_interval = min_interval
-                link.next_parse_at = func.now() + timedelta(minutes=min_interval)
-        
-        db.commit()
-
-
+        if interval is not None:
+            link.parse_interval = max(1, interval)
+            next_time = func.now() + timedelta(minutes=link.parse_interval)
+            link.next_parse_at = func.least(link.next_parse_at, next_time) if link.next_parse_at else func.now()
+        else:
+            link.next_parse_at = None
+    db.commit()
 
 
 def remove_link_from_group(db: Session, group_id: int, link_id: int) -> bool:

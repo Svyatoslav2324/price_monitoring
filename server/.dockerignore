@@ -1,0 +1,9 @@
+*
+!app/
+!app/**
+**/__pycache__/
+!requirements*.txt
+!create_db.py
+
+!install_ozon_browser.py
+**/.local/

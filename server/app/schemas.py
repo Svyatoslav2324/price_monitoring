@@ -41,6 +41,7 @@ class LinkResponse(BaseModel):
     id: int
     url: str
     marketplace_id: int
+    price_status: str | None = None
     current_price: float | None
     last_parsed_at: datetime | None
 
